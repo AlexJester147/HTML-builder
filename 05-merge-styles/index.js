@@ -21,8 +21,6 @@ fs.readdir(note, {withFileTypes: true}, (err, files) => {
 
      if (file.isFile() && ext == '.css'){
       let promise = Promise.resolve();
-      fs.readFile(note+base,'utf8', (err) => {
-        if (err) throw err;
         
           promise = promise.then(() => {
             return new Promise((resolve) => {
@@ -39,7 +37,6 @@ fs.readdir(note, {withFileTypes: true}, (err, files) => {
           }); 
         });
 
-      });
      }
 
       if (err) throw err;

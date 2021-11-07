@@ -16,6 +16,7 @@
     "eslint": "^7.32.0"
   },
   "dependencies": {
+    "fs-extra": "^10.0.0",
     "readline-sync": "^1.4.10"
   }
 }

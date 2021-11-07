@@ -1,46 +1,36 @@
 const fs = require('fs');
+const path = require('path');
+const readline = require('readline');
+const EOL = require("os").EOL;
 
-const note = '/Users/asus/Desktop/проекты/HTML-builder/02-write-file';
+const execExit = () => {
+    console.log(`${EOL}До свидания!`);
+    process.exit(0);
+}
 
-var readlineSync = require('readline-sync');
+const filePath = path.resolve(__dirname, 'hello.txt');
 
-let text = readlineSync.question('Enter text\n');
-console.log(text)
-
-console.log(process.version)
-
-
-  fs.open((note+'/hello.txt'), 'w', (err) => {
-      if(err) throw err; 
-  })
-
-
-
-  fs.writeFile((note+'/hello.txt'), text, (error) =>{
-    if(error) throw error; // если возникла ошибка
-  })
-
-
-  fs.readFile((note+'/hello.txt'),'utf8', (err, data) => {
+fs.open(filePath, 'w', (err) => {
     if (err) throw err;
-    console.log(data);
-  }); // выводим считанные данные
-  // fs.readFile((note+'/hello.txt'),'utf8', (err, data) => {
-  //   if (err) throw err;
-  //   console.log(data);
-  // }); // выводим считанные данные
-
-  fs.appendFile((note+'/hello.txt'), text, function(error){
-    if(error) throw error; // если возникла ошибка
-    console.log("Запись файла завершена. Содержимое файла:");
-
-
-    fs.readFile((note+'/hello.txt'),'utf8', (err, data) => {
-      if (err) throw err;
-      console.log(data);
-    }); // выводим считанные данные
+    console.log('Введите текст (или "exit", чтобы завершить работу): ');
+    n.prompt();
 });
 
+const n = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '>> ',
+});
 
+n.addListener('line', (data) => {
+    if (data.trim() === 'exit') execExit();
+    fs.appendFile(filePath, `${data}${EOL}`, (err) => {
+        if (err) throw err;
+    });
+    n.prompt();
+});
 
-
+n.addListener('SIGINT', () => {
+    console.log('\x1b[31m%s\x1b[0m', 'Ctn + C');
+    execExit();
+})
