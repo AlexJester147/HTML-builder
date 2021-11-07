@@ -1,101 +1,81 @@
-let fs = require('fs');
+const fs = require('fs/promises');
 const path = require('path');
-var fsExtra = require('fs-extra');
 
-const note = '/Users/asus/Desktop/проекты/HTML-builder/06-build-page/';
-const noteFinal = '/Users/asus/Desktop/проекты/HTML-builder/06-build-page/project-dist/';
-let arr = [];
+const projectDestFolder = path.join(__dirname, 'project-dist');
 
-//копирование директории
-fsExtra.copy(note + '/assets', noteFinal + '/assets', (err) => {
-  if (err){ throw err;
-  }
-  console.log('Copy completed!');
-});
+const templateFile = path.join(__dirname, 'template.html');
+const destIndexHtml = path.join(projectDestFolder, 'index.html');
+const componentsFolder = path.join(__dirname, 'components');
 
-//создание папки
-fs.mkdir(note + 'project-dist',{recursive:true}, (err) => {
-   if (err) throw err; 
-   console.log('Папка успешно создана');
-});
+const destCSSFile = path.join(projectDestFolder, 'style.css');
+const srcCSSFolder = path.join(__dirname, 'styles');
 
-//сборка стилей
-fs.readdir(note + 'styles/', {withFileTypes: true}, (err, files) => {
-  if (err) throw err;
-  for (let file of files){
-
-    let ext = path.extname(file.name);
-    let base = path.basename(file.name);
-
-   fs.stat(note + 'styles/' + base, (err) => {
-    
-     if (file.isFile() && ext == '.css'){
-      let promise = Promise.resolve();
-        
-          promise = promise.then(() => {
-            return new Promise((resolve) => {
-              fs.readFile(note + 'styles/' +base, (err, data) => {
-                if(err) { return resolve(false); }
-                arr+=data;
-                return resolve(true);
-              });
-            });
-          });
-        promise.then(() => {
-         fs.writeFile((noteFinal+'style.css'), arr, (error) =>{
-          if(error) throw error; // если возникла ошибка
-          console.log('CSS собран!');
-          }); 
-        });
-     }
-      if (err) throw err;
-    });
-  }
-});
+const srcAssets = path.join(__dirname, 'assets');
+const destAssets = path.join(projectDestFolder, 'assets');
 
 
+async function buildHTML(templateFile, componentsFolder, destIndexHtml) {
 
-//сборка html
-fs.readdir(note + 'components/', {withFileTypes: true}, (err, files) => {
-  if (err) throw err;
+    let template = await fs.readFile(templateFile, 'utf-8');
+    const componentsFiles = await fs.readdir(componentsFolder, { withFileTypes: true });
 
-  fs.copyFile(note + '/template.html', noteFinal + '/index.html', (err) => {
-    if (err) throw err;
-  });
+    for (const file of componentsFiles) {
+        if (file.isFile() && path.extname(file.name) === '.html') {
+            const filePath = path.join(componentsFolder, file.name);
+            const fileData = await fs.readFile(filePath, 'utf-8');
+            const extName = path.extname(file.name);
+            const baseName = path.basename(file.name, extName);
+            const reg = RegExp(`{{${baseName}}}`, 'gi');
 
-  for (let file of files){
+            template = template.replace(reg, fileData);
+        }
+    }
 
-    let ext = path.extname(file.name);
-    let base = path.basename(file.name);
+    await fs.writeFile(destIndexHtml, template);
+}
 
-   fs.stat(note + 'components/' + base, (err) => {
-    
-    if (err) throw err;
+async function buildCSS(srcCSSFolder, destBundleFile) {
+    let result = [];
+    const srcFiles = await fs.readdir(srcCSSFolder, {withFileTypes: true});
 
-    else if (file.isFile() && ext == '.html'){
+    for (const srcFile of srcFiles) {
+        if (srcFile.isFile() && path.extname(srcFile.name) === '.css') {
+            result.push(await fs.readFile(path.join(srcCSSFolder, srcFile.name), 'utf-8'));
+        }
+    }
 
+    await fs.writeFile(destBundleFile, result.join('\n'));
+}
 
-        fs.readFile(note + 'components/' + base, 'utf8', (err, data) => {
-          function getComp(){
-            return data;
-          }
-          if(err) throw err;
-          // console.log(data);
-          console.log(base);
-          fs.readFile(noteFinal + 'index.html', 'utf8', (err, data) => {
-            if (err) throw err;
-            data=data.replace(`{{${base.slice(0, - ext.length)}}}`, getComp());
-            // console.log(data);
-           
+async function copyDirectory(srcFolder, destFolder) {
+    await fs.mkdir(destFolder, { recursive: true });
+    const srcFiles = await fs.readdir(srcFolder, { withFileTypes: true });
+    const destFiles = await fs.readdir(destFolder, { withFileTypes: true });
 
-            fs.writeFile(noteFinal + 'index.html', data, (err) =>{
-              if (err) throw err;
-            });
-        });
-        
-      })
-              
-              };
-          })};
+    for (const file of destFiles) {
+        try {
+            await fs.rm(path.join(destFolder, file.name), { recursive: true });
+        } catch (err) {
+            // console.log(err);
+        } finally {
+            continue;
+        }
+    }
 
-     });
+    for (const file of srcFiles) {
+        if (file.isDirectory()) {
+            await copyDirectory(path.join(srcFolder, file.name), path.join(destFolder, file.name));
+        } else if (file.isFile()) {
+            await fs.copyFile(path.join(srcFolder, file.name), path.join(destFolder, file.name));
+        }
+    }
+}
+
+async function buildPage() {
+    await fs.mkdir(projectDestFolder, { recursive: true });
+    await buildHTML(templateFile, componentsFolder, destIndexHtml);
+    await buildCSS(srcCSSFolder, destCSSFile);
+    await copyDirectory(srcAssets, destAssets);
+}
+
+buildPage();
