@@ -1,51 +1,32 @@
 const fs = require('fs');
 const path = require('path');
+const { stdout } = process;
 
-const note = '/Users/asus/Desktop/проекты/HTML-builder/05-merge-styles/styles/';
-const noteFinal = '/Users/asus/Desktop/проекты/HTML-builder/05-merge-styles/project-dist/';
+const folderStyles = path.join(__dirname, 'styles');
+const dist = path.join(__dirname, 'project-dist');
+const bundle = path.join(__dirname, 'project-dist', 'bundle.css');
 
-let arr = '';
-fs.open((noteFinal+'bundle.css'), 'w', (err) => {
-  if(err) throw err; 
+fs.mkdir(dist, { recursive: true }, error => {
+  if (error) throw error;
 });
-
-fs.readdir(note, {withFileTypes: true}, (err, files) => {
-  if (err) throw err;
-  for (let file of files){
-
-    let ext = path.extname(file.name);
-    let base = path.basename(file.name);
-  
-
-   fs.stat(note+base, (err) => {
-
-     if (file.isFile() && ext == '.css'){
-      let promise = Promise.resolve();
-        
-          promise = promise.then(() => {
-            return new Promise((resolve) => {
-              fs.readFile(note+base, (err, data) => {
-                if(err) { return resolve(false); }
-                arr+=data;
-                return resolve(true);
-              });
-            });
-          });
-        promise.then(() => {
-         fs.writeFile((noteFinal+'bundle.css'), arr, (error) =>{
-          if(error) throw error; // если возникла ошибка
-          }); 
-        });
-
-     }
-
-      if (err) throw err;
-    });
-    
+fs.writeFile(bundle, '', error => {
+  if (error) throw error;
+})
+fs.readdir(folderStyles, { withFileTypes: true }, (error, files) => {
+  if (error) throw error;
+  for (let file of files) {
+    if (path.extname(file.name) === '.css') {
+      fs.readFile(`${folderStyles}/${file.name}`, 'utf-8', (error, data) => {
+        if (error) throw error;
+        else {
+          fs.appendFile(bundle, data, error => {
+            if (error) throw error;
+          })
+        }
+      })
+    }
   }
- 
+})
 
-
-});
-
+stdout.write('\u2551***  Bundle created or updated!  ***\u2551\n')
 
