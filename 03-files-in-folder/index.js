@@ -1,24 +1,18 @@
 const fs = require('fs');
 const path = require('path');
+const { stdout } = process;
 
-const note = '/Users/asus/Desktop/проекты/HTML-builder/03-files-in-folder/secret-folder/';
-
-fs.readdir(note, {withFileTypes: true}, (err, files) => {
-  if (err) throw err;
-  for (let file of files){
-
-    let ext = path.extname(file.name);
-    let base = path.basename(file.name);
-
-   let size = fs.stat(note+base, (err, stats) => {
-
-     if (!file.isDirectory()){
-      console.log(base.slice(0, -ext.length)+' - '+ext.slice(1) + ' - ' + stats.size/1000+'kb');
-     }
-
-      if (err) throw err;
-    });
+fs.readdir(path.join(__dirname, 'secret-folder'), { withFileTypes: true }, (error, files) => {
+  if (error) throw error;
+  for (let file of files) {
+    if (file.isFile()) {
+      const name = path.basename(file.name).split('.')[0];
+      const extension = path.extname(file.name).slice(1);
+      fs.stat(path.join(__dirname, 'secret-folder', file.name), (error, stats) => {
+        if (error) throw error;
+        const size = (stats.size * 0.001).toFixed(3);
+        stdout.write(`${name} - ${extension} - ${size}kb\n`);
+      })
+    }
   }
- 
 });
-
