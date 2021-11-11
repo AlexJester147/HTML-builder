@@ -1,25 +1,34 @@
-let fs = require('fs');
+const fs = require('fs');
+const promise = require('fs').promises;
 const path = require('path');
+const { stdout } = process;
 
-const note = '/Users/asus/Desktop/проекты/HTML-builder/04-copy-directory/';
+const distFiles = path.join(__dirname, 'files');
+const distFilesCopy = path.join(__dirname, 'files-copy');
 
-fs.mkdir(note + 'files-copy',{recursive:true}, (err) => {
-   if (err) throw err; 
-   console.log('Папка успешно создана');
-   
-   fs.readdir(note+'/files/', {withFileTypes: true}, (err, files) => {
-    if (err) throw err;
-    for (let file of files){
-  
-      let base = path.basename(file.name);
-  
-      fs.copyFile(note+'/files/'+base, note+'/files-copy/'+base, (err) => {
-        if(err) throw err; // не удалось скопировать файл
-        console.log('Файл успешно скопирован');
-     });
+fs.readdir(distFilesCopy, (error, files) => {
+  if (!error) {
+    for (const file of files) {
+      fs.unlink(path.join(distFilesCopy, file), error => {
+        if (error) throw error;
+      });
     }
-   
-  });
-
-   
+  } else return;
 });
+
+fs.mkdir(distFilesCopy, { recursive: true }, error => {
+  if (error) throw error;
+});
+
+fs.readdir(distFiles, { withFileTypes: true }, (error, files) => {
+  if (error) throw error;
+  for (let file of files) {
+    const currentFile = file.name.toString();
+    stdout.write(`File ${file.name} completed!\n`);
+    promise.copyFile(path.join(__dirname, 'files', currentFile), path.join(__dirname, 'files-copy', currentFile))
+      .catch(error => {
+        if (error) throw error;
+      })
+  }
+})
+
